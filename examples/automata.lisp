@@ -8,7 +8,7 @@
     (more (a . more)
      (d . more)
      (r . end))
-    (end)))
+    (end accept)))
 
 (defun run-automaton (machine init-state stream)
   (labels ((walker (state stream)
@@ -20,14 +20,14 @@
     (walker init-state stream)))
 
 (defmacro process-state (state-list)
-  `(if (null stream) t
-       ,(append '(case) '((first stream))
-                (loop for trans in (symbol-value state-list) collect
-                      `(,(first trans) (,(rest trans) (rest stream))))
-                '((otherwise nil)))))
+  (if (atom (first state-list)) (if (eq (first state-list) 'accept) '(null stream) nil)
+      (append '(case) '((first stream))
+              (loop for trans in state-list collect
+                    `(,(first trans) (,(rest trans) (rest stream))))
+              '((otherwise nil)))))
 
 (defmacro automaton (init-state m)
   `(labels ,(loop for state in (symbol-value m)
                   for x = (rest state)
-                  collect `(,(first state) (stream) ,(macroexpand '(process-state x))))
+                  collect `(,(first state) (stream) ,(macroexpand `(process-state ,x))))
      (function ,init-state)))
